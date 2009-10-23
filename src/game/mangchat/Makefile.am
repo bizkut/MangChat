@@ -51,7 +51,7 @@ EXTRA_DIST = \
 
 ## Additional files to install
 sysconf_DATA = \
-	mangosd.conf.dist
+	mangchat.conf.dist
 
 install-data-hook:
 	@list='$(sysconf_DATA)'
