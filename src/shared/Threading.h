@@ -33,6 +33,8 @@ namespace ACE_Based
             virtual ~Runnable() {}
             virtual void run() = 0;
 
+            Runnable() { m_deleted = false; }
+
             void incReference() { ++m_refs; }
             void decReference()
             {
