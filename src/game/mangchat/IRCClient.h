@@ -25,6 +25,8 @@ using namespace std;
 // time we need to wait before we try another connecton attempt
 // Default is 30 seconds
 #define MAX_SCRIPT_INST 10
+// let scripts know we have mangchat
+#define MANGCHAT_INSTALLED
 // CLINES is used for the default chatlines
 // By using the GetChatLine function its easier and faster
 // to receieve the line you need.
