@@ -113,7 +113,7 @@ void Channel::Join(uint64 p, const char *pass)
     MakeYouJoined(&data);
     SendToOne(&data, p);
 
-    sIRC.Handle_WoW_Channel(m_name, objmgr.GetPlayer(p), CHANNEL_JOIN);
+    sIRC.Handle_WoW_Channel(m_name, sObjectMgr.GetPlayer(p), CHANNEL_JOIN);
 
     JoinNotify(p);
 
@@ -162,7 +162,7 @@ void Channel::Leave(uint64 p, bool send)
 
         LeaveNotify(p);
 
-        sIRC.Handle_WoW_Channel(m_name, objmgr.GetPlayer(p), CHANNEL_LEAVE);
+        sIRC.Handle_WoW_Channel(m_name, sObjectMgr.GetPlayer(p), CHANNEL_LEAVE);
 
         if(changeowner)
         {

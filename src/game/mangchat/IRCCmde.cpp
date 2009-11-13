@@ -99,14 +99,14 @@ void IRCCmd::Account_Player(_CDATA *CD)
         return;
     }
     normalizePlayerName(_PARAMS[0]);
-    uint64 guid = objmgr.GetPlayerGUIDByName(_PARAMS[0]);
+    uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
     uint32 account_id = 0;
-    account_id = objmgr.GetPlayerAccountIdByGUID(guid);
+    account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     if(account_id)
     {
         if(account_id == GetAcctIDFromName(CD->USER) || GetLevel(CD->USER) >= sIRC._op_gm_lev)
         {
-            Player* plr = objmgr.GetPlayer(guid);
+            Player* plr = sObjectMgr.GetPlayer(guid);
             if(_PARAMS[1] == "lock")
             {
                 loginDatabase.PExecute( "UPDATE `account` SET `locked` = '1' WHERE `id` = '%d'",account_id);
@@ -174,8 +174,8 @@ void IRCCmd::Ban_Player(_CDATA *CD)
     }
     if(_PARAMS[1] == "acct")
     {
-        uint64 guid = objmgr.GetPlayerGUIDByName(_PARAMS[0].c_str());
-        uint32 acctid = objmgr.GetPlayerAccountIdByGUID(guid);
+        uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0].c_str());
+        uint32 acctid = sObjectMgr.GetPlayerAccountIdByGUID(guid);
         if(_PARAMS[2] == "")
             _PARAMS[2] = "No Reason";
         if(acctid)
@@ -262,8 +262,8 @@ void IRCCmd::Char_Player(_CDATA *CD)
         return;
     }
     normalizePlayerName(_PARAMS[0]);
-    uint64 guid = objmgr.GetPlayerGUIDByName(_PARAMS[0]);
-    Player* plr = objmgr.GetPlayer(guid);
+    uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
+    Player* plr = sObjectMgr.GetPlayer(guid);
     if(plr)
     {
         if(_PARAMS[1] == "mapcheat")
@@ -559,7 +559,7 @@ void IRCCmd::Item_Player(_CDATA *CD)
             Send_IRCA(CD->USER, "\0034[ERROR] : "+_PARAMS[0]+" Is Not Online!", true, "ERROR");
             return;
         }
-        ItemPrototype const *pProto = objmgr.GetItemPrototype(itemId);
+        ItemPrototype const *pProto = sObjectMgr.GetItemPrototype(itemId);
         //Subtract
         if (count < 0)
         {
@@ -723,8 +723,8 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
     if(_PARAMS[0] == "acct")
     {
         uint32 acctid = atoi(_PARAMS[1].c_str());
-		if(accmgr.GetId(_PARAMS[1]))
-            acctid = accmgr.GetId(_PARAMS[1]);
+		if(sAccountMgr.GetId(_PARAMS[1]))
+            acctid = sAccountMgr.GetId(_PARAMS[1]);
         if(acctid > 0)
         {       
             std::string DateTime = "%a, %b %d, %Y - %h:%i%p";
@@ -793,13 +793,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
     if(_PARAMS[0] == "char")
     {
         uint32 plguid = atoi(_PARAMS[1].c_str());
-        if(objmgr.GetPlayerGUIDByName(_PARAMS[1].c_str()))
-            plguid = objmgr.GetPlayerGUIDByName(_PARAMS[1].c_str());
+        if(sObjectMgr.GetPlayerGUIDByName(_PARAMS[1].c_str()))
+            plguid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[1].c_str());
         if(plguid > 0)
         {       
             QueryResult *result = CharacterDatabase.PQuery("SELECT guid, account, name, race, class, online, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 35), ' ' , -1) AS level, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 238), ' ' , -1) AS guildid, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 239), ' ' , -1) AS guildrank, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 927), ' ' , -1) AS xp, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 928), ' ' , -1) AS maxxp, SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS gold, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 1454), ' ' , -1) AS hk, totaltime FROM characters WHERE guid =%i", plguid);
             uint32 latency = 0;
-            Player *chr = objmgr.GetPlayer(plguid);
+            Player *chr = sObjectMgr.GetPlayer(plguid);
             if(chr) 
             {
                 latency = chr->GetSession()->GetLatency();
@@ -832,7 +832,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 std::string guildinfo = "";
                 if (pguildid != 0)
                 {
-                    Guild* guild = objmgr.GetGuildById(pguildid);
+                    Guild* guild = sObjectMgr.GetGuildById(pguildid);
                     if (guild)
                     {
                         guildinfo = " " + guild->GetRankName(pguildrank) + " Of " + guild->GetName();
@@ -1261,7 +1261,7 @@ void IRCCmd::Level_Player(_CDATA *CD)
     }
     std::string player  = _PARAMS[0];
     normalizePlayerName(player);
-    uint64 guid = objmgr.GetPlayerGUIDByName(player.c_str());
+    uint64 guid = sObjectMgr.GetPlayerGUIDByName(player.c_str());
     std::string s_newlevel  = _PARAMS[1];
     uint8 i_newlvl = atoi(s_newlevel.c_str());
     if(!guid)
@@ -1274,7 +1274,7 @@ void IRCCmd::Level_Player(_CDATA *CD)
         return;
     } else
     {
-        Player *chr = objmgr.GetPlayer(guid);
+        Player *chr = sObjectMgr.GetPlayer(guid);
         int32 i_oldlvl = chr ? chr->getLevel() : Player::GetUInt32ValueFromDB(UNIT_FIELD_LEVEL,guid);
         if(chr)
         {
@@ -1315,8 +1315,8 @@ void IRCCmd::Money_Player(_CDATA *CD)
     }
     std::string player  = _PARAMS[0];
     normalizePlayerName(player);
-    uint64 guid = objmgr.GetPlayerGUIDByName(player.c_str());
-    Player *chr = objmgr.GetPlayer(guid);
+    uint64 guid = sObjectMgr.GetPlayerGUIDByName(player.c_str());
+    Player *chr = sObjectMgr.GetPlayer(guid);
 
     std::string s_money  = _PARAMS[1];
     int32 money = atoi(s_money.c_str());
@@ -1332,7 +1332,7 @@ void IRCCmd::Money_Player(_CDATA *CD)
     }
     else
     {
-        Player *chr = objmgr.GetPlayer(guid);
+        Player *chr = sObjectMgr.GetPlayer(guid);
         uint32 moneyuser = 0;
         if(chr)
             moneyuser = chr->GetMoney();
@@ -1397,14 +1397,14 @@ void IRCCmd::Mute_Player(_CDATA *CD)
         return;
     }
     normalizePlayerName(_PARAMS[0]);
-    uint64 guid = objmgr.GetPlayerGUIDByName(_PARAMS[0]);
+    uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
     if(guid)
     {
         if(_PARAMS[1] == "release")
         {
-            Player* plr = objmgr.GetPlayer(guid);
+            Player* plr = sObjectMgr.GetPlayer(guid);
             uint32 account_id = 0;
-            account_id = objmgr.GetPlayerAccountIdByGUID(guid);
+            account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
             loginDatabase.PExecute("UPDATE `account` SET `mutetime` = '0' WHERE `id` = '%u'", account_id );
             Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been UnMuted By: "+CD->USER+"." , true, CD->TYPE);
             if(plr)
@@ -1417,10 +1417,10 @@ void IRCCmd::Mute_Player(_CDATA *CD)
         {
             if(_PARAMS[2] == "")
                 _PARAMS[2] = "No Reason Given";
-            Player* plr = objmgr.GetPlayer(guid);
+            Player* plr = sObjectMgr.GetPlayer(guid);
             time_t mutetime = time(NULL) + atoi(_PARAMS[1].c_str())*60;
             uint32 account_id = 0;
-            account_id = objmgr.GetPlayerAccountIdByGUID(guid);
+            account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
             if(plr) plr->GetSession()->m_muteTime = mutetime;
             loginDatabase.PExecute("UPDATE `account` SET `mutetime` = " UI64FMTD " WHERE `id` = '%u'",uint64(mutetime), account_id );
             Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been Muted By: "+CD->USER+". For: "+_PARAMS[1]+" Minutes. Reason: "+_PARAMS[2] , true, CD->TYPE);
@@ -1676,7 +1676,7 @@ void IRCCmd::Tele_Player(_CDATA *CD)
         }
         else
         {
-            if(uint64 guid = objmgr.GetPlayerGUIDByName(_PARAMS[2].c_str()))
+            if(uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[2].c_str()))
             {
                 bool in_flight;
                 Player::LoadPositionFromDB(mapid, pX, pY, pZ, pO, in_flight, guid);
@@ -1715,7 +1715,7 @@ void IRCCmd::Tele_Player(_CDATA *CD)
                 }
                 else
                 {
-                    uint64 guid = objmgr.GetPlayerGUIDByName(_PARAMS[0]);
+                    uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
                     Player::SavePositionInDB(mapid,pX,pY,pZ,pO,MapManager::Instance().GetZoneId(mapid,pX,pY,pZ),guid);
                     sIRC.Send_IRC_Channel(ChanOrPM(CD), rMsg + " \0034*Offline Tele.* ", true, CD->TYPE);
                 }

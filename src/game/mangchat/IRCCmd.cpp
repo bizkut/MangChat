@@ -600,7 +600,7 @@ bool IRCCmd::AcctIsLoggedIn(std::string USER)
 
 std::string IRCCmd::AcctIsBanned(std::string ACCT)
 {
-    uint32 acctid = accmgr.GetId(ACCT);
+    uint32 acctid = sAccountMgr.GetId(ACCT);
     std::string banned = "NOTBANNED";
     QueryResult *result = loginDatabase.PQuery("SELECT banreason FROM ip_banned WHERE ip=(SELECT last_ip FROM account WHERE id = '%i')", acctid);
     if(result)
@@ -631,11 +631,11 @@ int IRCCmd::GetLevel(std::string sName)
 
 int IRCCmd::AcctLevel(std::string plnme)
 {
-    uint64 guid = objmgr.GetPlayerGUIDByName(plnme);
+    uint64 guid = sObjectMgr.GetPlayerGUIDByName(plnme);
     uint32 account_id = 0;
     uint32 security = 0;
-    account_id = objmgr.GetPlayerAccountIdByGUID(guid);
-    security = accmgr.GetSecurity(account_id);
+    account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
+    security = sAccountMgr.GetSecurity(account_id);
     return security;
 }
 
@@ -666,7 +666,7 @@ int IRCCmd::GetAcctIDFromName(std::string sName)
         if((*i)->Name == sName)
         {
             uint32 acct_id = 0;
-            acct_id = accmgr.GetId((*i)->UName.c_str());
+            acct_id = sAccountMgr.GetId((*i)->UName.c_str());
             return acct_id;
         }
     }
@@ -819,7 +819,7 @@ void IRCClient::AHFunc(uint64 itmid, std::string itmnme, std::string plname)
 //{
 //    IRCCmd Command;
 //		std::transform(location.begin(), location.end(), location.begin(), towupper);
-//		objmgr.GetAreaId
+//		sObjectMgr.GetAreaId
 //		if(location == "GMI" || location == "GMISLAND")
 //		  if(MapManager::Instance().GetZoneId(1,posx,posy,posz) == 876)
 //    {
@@ -827,10 +827,10 @@ void IRCClient::AHFunc(uint64 itmid, std::string itmnme, std::string plname)
 //        if(result)
 //       {
 //            delete result;
-//            uint64 guid = objmgr.GetPlayerGUIDByName(player);
-//            Player* plr = objmgr.GetPlayer(guid);
-//            uint64 guid2 = objmgr.GetPlayerGUIDByName(from);
-//            Player* plr2 = objmgr.GetPlayer(guid2);
+//            uint64 guid = sObjectMgr.GetPlayerGUIDByName(player);
+//            Player* plr = sObjectMgr.GetPlayer(guid);
+//            uint64 guid2 = sObjectMgr.GetPlayerGUIDByName(from);
+//            Player* plr2 = sObjectMgr.GetPlayer(guid2);
 //            if(plr) sIRC.Send_WoW_Player(plr, "You Have Already Had A Trip To GM Island. There Is Only One Tele To GM Island Per Player, Please Donate If You Would like The .tele Command.");
 //            if(plr2) sIRC.Send_WoW_Player(plr2, "This Player Has Already Had Their Trip To GM Island. The Tele Has Been Canceled.");
 //            else sIRC.Send_IRC_Channel(from.c_str(), MakeMsg(" \0034[ERROR] : $Player Has Already Had Their Trip To GMI! The Tele Has Been Canceled", "$Player", player.c_str()), true, "ERROR");
