@@ -7,6 +7,7 @@
  * |Death| <death@hell360.net>, Lice <lice@yeuxverts.net>, Dj_baby & Sanaell, Tase
  * Conversion to MangChat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
  * Continued by Xeross
+ * Continued by 3raZar3 for project Tiamat git://github.com/3raZar3/TiamaT.git
  * With Help And Support From The MaNGOS Project Community.
  * PLEASE RETAIN THE COPYRIGHT OF THE AUTHORS.
  */
@@ -43,6 +44,8 @@ void IRCClient::run()
         "***************************************",
         "**   MangChat Threaded IRC Client    **",
         "**     With Enhanced GM Control.     **",
+        "**      	Updated by 3raZar3	      **",
+        "**   http://clanice.game-host.org    **",
         "***************************************");
     sLog.outString("****** MangChat: %s ********", sIRC._Mver.c_str());
     int cCount = 0;
