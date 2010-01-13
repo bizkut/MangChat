@@ -929,6 +929,8 @@ class ObjectMgr
 
         QuestPOIMap         mQuestPOIMap;
 
+        QuestPOIMap         mQuestPOIMap;
+
         WeatherZoneMap      mWeatherZoneMap;
 
         //character reserved names
