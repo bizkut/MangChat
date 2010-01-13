@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,9 +91,7 @@ TargetedMovementGenerator<T>::_setTargetLocation(T &owner)
 template<>
 void TargetedMovementGenerator<Creature>::Initialize(Creature &owner)
 {
-    if (owner.HasSearchedAssistance())
-        owner.AddMonsterMoveFlag(MONSTER_MOVE_WALK);
-    else
+    if (owner.isInCombat())
         owner.RemoveMonsterMoveFlag(MONSTER_MOVE_WALK);
 
     if (((Creature*)&owner)->canFly())

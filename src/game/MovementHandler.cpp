@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -137,13 +137,19 @@ void WorldSession::HandleMoveWorldportAckOpcode()
         }
     }
 
-    if (mInstance && mEntry->IsDungeon())
+    if (mInstance)
     {
         Difficulty diff = GetPlayer()->GetDifficulty(mEntry->IsRaid());
-        if (uint32 timeReset = sInstanceSaveMgr.GetResetTimeFor(GetPlayer()->GetMapId(),diff))
+        if(MapDifficulty const* mapDiff = GetMapDifficultyData(mEntry->MapID,diff))
         {
-            uint32 timeleft = timeReset - time(NULL);
-            GetPlayer()->SendInstanceResetWarning(GetPlayer()->GetMapId(), diff, timeleft);
+            if (mapDiff->resetTime)
+            {
+                if (uint32 timeReset = sInstanceSaveMgr.GetResetTimeFor(mEntry->MapID,diff))
+                {
+                    uint32 timeleft = timeReset - time(NULL);
+                    GetPlayer()->SendInstanceResetWarning(mEntry->MapID, diff, timeleft);
+                }
+            }
         }
     }
 
@@ -292,6 +298,29 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
     if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->isInFlight())
         plMover->HandleFall(movementInfo);
+
+    if ((opcode == MSG_MOVE_SET_WALK_MODE || opcode == MSG_MOVE_SET_RUN_MODE) && plMover)
+    {
+        Pet* pPet = plMover->GetPet();
+        Pet* pMiniPet = plMover->GetMiniPet();
+
+        if (movementInfo.HasMovementFlag(MOVEMENTFLAG_WALK_MODE))
+        {
+            if (pPet && !pPet->isInCombat())
+                pPet->SetMonsterMoveFlags(MONSTER_MOVE_WALK);
+
+            if (pMiniPet)
+                pMiniPet->SetMonsterMoveFlags(MONSTER_MOVE_WALK);
+        }
+        else
+        {
+            if (pPet)
+                pPet->RemoveMonsterMoveFlag(MONSTER_MOVE_WALK);
+
+            if (pMiniPet)
+                pMiniPet->RemoveMonsterMoveFlag(MONSTER_MOVE_WALK);
+        }
+    }
 
     if (plMover && (movementInfo.HasMovementFlag(MOVEMENTFLAG_SWIMMING) != plMover->IsInWater()))
     {
