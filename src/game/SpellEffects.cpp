@@ -5182,7 +5182,6 @@ void Spell::EffectScriptEffect(uint32 effIndex)
 
                     break;
                 }
-
                 // High Executor's Branding Iron
                 case 48603:
                     // Torture the Torturer: High Executor's Branding Iron Impact
