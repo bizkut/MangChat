@@ -909,26 +909,10 @@ void Group::CountTheRoll(Rolls::iterator rollI, uint32 NumberOfPlayers)
             if (itr->second != DISENCHANT)
                 continue;
 
-            uint8 randomN = urand(1, 99);
-            SendLootRoll(0, itr->first, randomN, ROLL_DISENCHANT, *roll);
-            if (maxresul < randomN)
-            {
-                maxguid  = itr->first;
-                maxresul = randomN;
+                    ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(roll->itemid);
+                    player->AutoStoreLoot(pProto->DisenchantID, LootTemplates_Disenchant, true);
+                }
             }
-        }
-        SendLootRollWon(0, maxguid, maxresul, ROLL_DISENCHANT, *roll);
-        player = sObjectMgr.GetPlayer(maxguid);
-
-        if(player && player->GetSession())
-        {
-            LootItem *item = &(roll->getLoot()->items[roll->itemSlot]);
-            item->is_looted = true;
-            roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
-            --roll->getLoot()->unlootedCount;
-
-            ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(roll->itemid);
-            player->AutoStoreLoot(pProto->DisenchantID, LootTemplates_Disenchant, true);
         }
     }
     else
@@ -1303,8 +1287,6 @@ void Group::_removeRolls(const uint64 &guid)
             --roll->totalNeed;
         if (itr2->second == PASS)
             --roll->totalPass;
-        if (itr2->second == DISENCHANT)
-            --roll->totalDisenchant;
         if (itr2->second != NOT_VALID)
             --roll->totalPlayersRolling;
 
