@@ -48,6 +48,14 @@ enum CinematicsSkipMode
     CINEMATICS_SKIP_ALL       = 2,
 };
 
+// config option SkipCinematics supported values
+enum CinematicsSkipMode
+{
+    CINEMATICS_SKIP_NONE      = 0,
+    CINEMATICS_SKIP_SAME_RACE = 1,
+    CINEMATICS_SKIP_ALL       = 2,
+};
+
 class LoginQueryHolder : public SqlQueryHolder
 {
     private:
