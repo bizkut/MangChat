@@ -2080,7 +2080,6 @@ void ObjectMgr::LoadItemPrototypes()
         }
     }
 
-    // check some dbc referenced items (avoid duplicate reports)
     std::set<uint32> notFoundOutfit;
     for (uint32 i = 1; i < sCharStartOutfitStore.GetNumRows(); ++i)
     {

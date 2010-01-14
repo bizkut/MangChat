@@ -898,6 +898,23 @@ void Group::CountTheRoll(Rolls::iterator rollI, uint32 NumberOfPlayers)
             }
         }
     }
+    else if(roll->totalDisenchant > 0)
+    {
+        uint8 maxresul = 0;
+        uint64 maxguid  = (*roll->playerVote.begin()).first;
+        Player *player;
+
+        for( Roll::PlayerVote::const_iterator itr = roll->playerVote.begin(); itr != roll->playerVote.end(); ++itr)
+        {
+            if (itr->second != DISENCHANT)
+                continue;
+
+                    ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(roll->itemid);
+                    player->AutoStoreLoot(pProto->DisenchantID, LootTemplates_Disenchant, true);
+                }
+            }
+        }
+    }
     else
     {
         SendLootAllPassed(NumberOfPlayers, *roll);
