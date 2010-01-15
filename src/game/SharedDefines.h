@@ -2363,6 +2363,8 @@ enum ChatMsg
     CHAT_MSG_PARTY_LEADER           = 0x33
 };
 
+#define MAX_CHAT_MSG_TYPE 0x34
+
 enum ChatLinkColors
 {
     CHAT_LINK_COLOR_TRADE       = 0xffffd000,   // orange
