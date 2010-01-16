@@ -40,6 +40,7 @@ INSERT INTO `IRC_Commands` VALUES ('saveall', '[saveall] : Forces MaNGOS To Save
 INSERT INTO `IRC_Commands` VALUES ('shutdown', '[shutdown <TimeInSeconds>] : Shuts The Server Down In <TimeInSeconds>, Use 0 For Immediate Shut Down', '3');
 INSERT INTO `IRC_Commands` VALUES ('spell', '[spell <Player> <Cast/Learn/UnLearn> <SpellID>] : Make <Player> <Learn> Or <UnLearn> A Spell, Or <Cast> A Spell On A <Player>.', '3');
 INSERT INTO `IRC_Commands` VALUES ('tele', '[tele <Player> <l/c/r/to> <Loc.Name/MAPID X Y Z/Recall/Player>] : Teleport Player To Location, Coords, Or Another Player. (l-Location)(c-Coords)', '3');
+INSERT INTO `IRC_Commands` VALUES ('ticket', '[ticket <list/read/respond/delete> <limit/name/all> <message>] : Manage GM tickets, respond with message', '3');
 INSERT INTO `IRC_Commands` VALUES ('top', '[top <accttime/chartime/money> <limit>] : Display top stats for given option. Only GM Higher Than Config Option Can Use Limit.', '3');
 INSERT INTO `IRC_Commands` VALUES ('who', '[who] : Displays Users Currently Logged In To MangChat.', '1');
 
