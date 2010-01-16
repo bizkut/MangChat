@@ -1,7 +1,7 @@
 /*
  * MangChat By |Death| And Cybrax, And continued by Xeross
  *
- * This Program Is Free Software; You Can Redistribute It And/Or Modify It Under The Terms 
+ * This Program Is Free Software; You Can Redistribute It And/Or Modify It Under The Terms
  * Of The GNU General Public License
  * Written and Developed by Cybrax. cybraxvd@gmail.com
  * |Death| <death@hell360.net>, Lice <lice@yeuxverts.net>, Dj_baby & Sanaell, Tase
@@ -25,6 +25,7 @@
 #include "../SpellAuras.h"
 #include "SystemConfig.h"
 #include "../Config/ConfigEnv.h"
+#include "../GMTicketMgr.h"
 
 #define Send_Player(p, m)           sIRC.Send_WoW_Player(p, m)
 #define Send_IRCA(c, m, b, t)       sIRC.Send_IRC_Channel(c, m, b, t)
@@ -39,47 +40,47 @@ void IRCCmd::Handle_Login(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 2);
     std::string isbanned = AcctIsBanned(_PARAMS[0]);
-    if(isbanned == "NOTBANNED")
+    if (isbanned == "NOTBANNED")
     {
-        if(!IsLoggedIn(CD->USER))
+        if (!IsLoggedIn(CD->USER))
         {
-            if(!AcctIsLoggedIn(_PARAMS[0].c_str()))
+            if (!AcctIsLoggedIn(_PARAMS[0].c_str()))
             {
                 QueryResult *result = loginDatabase.PQuery("SELECT `gmlevel` FROM `account` WHERE `username`='%s' AND `sha_pass_hash`=SHA1(CONCAT(UPPER(`username`),':',UPPER('%s')));", _PARAMS[0].c_str(), _PARAMS[1].c_str());
                 if (result)
                 {
                     Field *fields = result->Fetch();
                     int GMLevel = fields[0].GetInt16();
-                    if(GMLevel >= 0)
+                    if (GMLevel >= 0)
                     {
                         _client *NewClient = new _client();
-                         NewClient->Name     = CD->USER;
+                        NewClient->Name     = CD->USER;
                         NewClient->UName    = MakeUpper(_PARAMS[0]);
                         NewClient->GMLevel  = fields[0].GetInt16();
                         _CLIENTS.push_back(NewClient);
                         Send_IRCA(CD->USER, MakeMsg("You Are Now Logged In As %s, Welcome To MangChat Admin Mode.", _PARAMS[0].c_str()), true, CD->TYPE);
 
-                        if(sIRC._op_gm == 1 && GMLevel >= sIRC._op_gm_lev)
+                        if (sIRC._op_gm == 1 && GMLevel >= sIRC._op_gm_lev)
                         {
-                            for(int i=1;i < sIRC._chan_count + 1;i++)
-                            sIRC.SendIRC("MODE #"+sIRC._irc_chan[i]+" +o "+CD->USER );
+                            for (int i=1;i < sIRC._chan_count + 1;i++)
+                                sIRC.SendIRC("MODE #"+sIRC._irc_chan[i]+" +o "+CD->USER );
                         }
                     }
-                }else
+                } else
                     Send_IRCA(CD->USER, "\0034[ERROR] : Sorry, Your Username Or Password Is Incorrect. Please Try Again. ", true, "ERROR");
-            }else
+            } else
                 Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : %s Is Already Logged In With This Username. ", GetNameFromAcct(MakeUpper(_PARAMS[0])).c_str()), true, "ERROR");
-        }else
+        } else
             Send_IRCA(CD->USER, "\0034[ERROR] : You Are Already Logged In As "+ _PARAMS[0] +"!", true, "ERROR");
-    }else
-         Send_IRCA(CD->USER, "\0034[ERROR] : Sorry You Are "+isbanned+". You Cannot Log In To MangChat "+CD->USER.c_str()+"!", true, "ERROR");
+    } else
+        Send_IRCA(CD->USER, "\0034[ERROR] : Sorry You Are "+isbanned+". You Cannot Log In To MangChat "+CD->USER.c_str()+"!", true, "ERROR");
 }
 
 void IRCCmd::Handle_Logout(_CDATA *CD)
 {
-    for(std::list<_client*>::iterator i=_CLIENTS.begin(); i!=_CLIENTS.end();i++)
+    for (std::list<_client*>::iterator i=_CLIENTS.begin(); i!=_CLIENTS.end();i++)
     {
-        if((*i)->Name == CD->USER)
+        if ((*i)->Name == CD->USER)
         {
             _CLIENTS.erase(i);
             delete (*i);
@@ -93,7 +94,7 @@ void IRCCmd::Handle_Logout(_CDATA *CD)
 void IRCCmd::Account_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 3);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
@@ -102,38 +103,38 @@ void IRCCmd::Account_Player(_CDATA *CD)
     uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
     uint32 account_id = 0;
     account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
-    if(account_id)
+    if (account_id)
     {
-        if(account_id == GetAcctIDFromName(CD->USER) || GetLevel(CD->USER) >= sIRC._op_gm_lev)
+        if (account_id == GetAcctIDFromName(CD->USER) || GetLevel(CD->USER) >= sIRC._op_gm_lev)
         {
             Player* plr = sObjectMgr.GetPlayer(guid);
-            if(_PARAMS[1] == "lock")
+            if (_PARAMS[1] == "lock")
             {
                 loginDatabase.PExecute( "UPDATE `account` SET `locked` = '1' WHERE `id` = '%d'",account_id);
-                if(plr) Send_Player(plr, MakeMsg("Your Account Has Been Locked To Your Current IP By: %s", CD->USER.c_str()));
+                if (plr) Send_Player(plr, MakeMsg("Your Account Has Been Locked To Your Current IP By: %s", CD->USER.c_str()));
                 Send_IRCA(ChanOrPM(CD), "\00313["+GetAcctNameFromID(account_id)+"] : Account Has Been Locked To Their Current IP Address.", true, CD->TYPE);
             }
-            else if(_PARAMS[1] == "unlock")
+            else if (_PARAMS[1] == "unlock")
             {
                 loginDatabase.PExecute( "UPDATE `account` SET `locked` = '0' WHERE `id` = '%d'",account_id);
-                if(plr) Send_Player(plr, MakeMsg("Your Account Has Been UnLocked From The Associated IP By: %s", CD->USER.c_str()));
+                if (plr) Send_Player(plr, MakeMsg("Your Account Has Been UnLocked From The Associated IP By: %s", CD->USER.c_str()));
                 Send_IRCA(ChanOrPM(CD), "\00313["+GetAcctNameFromID(account_id)+"] : Account Has Been UnLocked From The Associated IP Address.", true, CD->TYPE);
             }
-            else if(_PARAMS[1] == "mail")
+            else if (_PARAMS[1] == "mail")
             {
                 loginDatabase.PExecute( "UPDATE `account` SET `email` = '%s' WHERE `id` = '%d'",_PARAMS[2].c_str() ,account_id);
                 if (plr) Send_Player(plr, MakeMsg("%s Has Changed Your EMail Adress To: %s", CD->USER.c_str(), _PARAMS[2].c_str()));
                 Send_IRCA(ChanOrPM(CD), "\00313["+GetAcctNameFromID(account_id)+"] : EMail Address Successfully Changed To: "+_PARAMS[2], true, CD->TYPE);
             }
-            else if(_PARAMS[1] == "pass")
+            else if (_PARAMS[1] == "pass")
             {
                 loginDatabase.PExecute( "UPDATE `account` SET `sha_pass_hash` = SHA1(CONCAT(UPPER(`username`),':',UPPER('%s'))) WHERE `id` = '%d'",_PARAMS[2].c_str() ,account_id);
                 if (plr) Send_Player(plr, MakeMsg("%s Has Changed Your Password To: %s", CD->USER.c_str(), _PARAMS[2].c_str()));
                 Send_IRCA(ChanOrPM(CD), "\00313["+GetAcctNameFromID(account_id)+"] : Password Successfully Changed To: "+_PARAMS[2], true, CD->TYPE);
             }
-            else if(_PARAMS[1] == "rename")
+            else if (_PARAMS[1] == "rename")
             {
-                if(plr)
+                if (plr)
                 {
                     plr->SetAtLoginFlag(AT_LOGIN_RENAME);
                     Send_Player(plr, MakeMsg("%s Has Requested You Change This Characters Name, Rename Will Be Forced On Next Login!", CD->USER.c_str()));
@@ -152,17 +153,17 @@ void IRCCmd::Account_Player(_CDATA *CD)
 void IRCCmd::Ban_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 3);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
     }
-    if(_PARAMS[1] == "ip")
+    if (_PARAMS[1] == "ip")
     {
         std::string ip = GetIPFromPlayer(_PARAMS[0]);
-        if(_PARAMS[2] == "")
+        if (_PARAMS[2] == "")
             _PARAMS[2] = "No Reason";
-        if(ip != "")
+        if (ip != "")
         {
             loginDatabase.PExecute( "INSERT IGNORE INTO `ip_banned` VALUES ('%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), '%s', '%s')", ip.c_str(), CD->USER.c_str(), _PARAMS[2].c_str());
             if (Player* plr = GetPlayer(_PARAMS[0]))
@@ -172,13 +173,13 @@ void IRCCmd::Ban_Player(_CDATA *CD)
         else
             Send_IRCA(CD->USER, "\0034[ERROR] : I Cannot Locate An IP Address For The Character Name Given.", true, "ERROR");
     }
-    if(_PARAMS[1] == "acct")
+    if (_PARAMS[1] == "acct")
     {
         uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0].c_str());
         uint32 acctid = sObjectMgr.GetPlayerAccountIdByGUID(guid);
-        if(_PARAMS[2] == "")
+        if (_PARAMS[2] == "")
             _PARAMS[2] = "No Reason";
-        if(acctid)
+        if (acctid)
         {
             loginDatabase.PExecute( "INSERT INTO `account_banned` VALUES ('%u', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), '%s', '%s', 1)", acctid, CD->USER.c_str(), _PARAMS[2].c_str());
             if (Player* plr = GetPlayer(_PARAMS[0]))
@@ -188,10 +189,10 @@ void IRCCmd::Ban_Player(_CDATA *CD)
         else
             Send_IRCA(CD->USER, "\0034[ERROR] : I Cannot Locate An Account For The Character Name Given.", true, "ERROR");
     }
-    if(_PARAMS[1] == "unban")
+    if (_PARAMS[1] == "unban")
     {
         std::string unbani = _PARAMS[0];
-        if(atoi(unbani.c_str()) > 0)
+        if (atoi(unbani.c_str()) > 0)
         {
             loginDatabase.PExecute( "DELETE FROM ip_banned WHERE ip = '%s'", _PARAMS[0].c_str());
             Send_IRCA(ChanOrPM(CD), MakeMsg("\00313[%s] : Has Been Removed From The IP Ban List.", _PARAMS[0].c_str()), true, CD->TYPE);
@@ -199,7 +200,7 @@ void IRCCmd::Ban_Player(_CDATA *CD)
         else
         {
             QueryResult *result = loginDatabase.PQuery("SELECT id FROM `account` WHERE username = '%s'", _PARAMS[0].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string id = fields[0].GetCppString();
@@ -218,35 +219,35 @@ void IRCCmd::Ban_Player(_CDATA *CD)
 void IRCCmd::Chan_Control(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 2);
-    if(CD->FROM == sIRC._Nick)
+    if (CD->FROM == sIRC._Nick)
     {
         Send_IRCA(CD->USER, "\0034[ERROR] : You Cannot Use This Command Through A PM Yet.", true, "ERROR");
         return;
     }
-    if(_PARAMS[0] == "op")
+    if (_PARAMS[0] == "op")
     {
-        if(_PARAMS[1].length() > 1)
+        if (_PARAMS[1].length() > 1)
             sIRC.SendIRC("MODE "+CD->FROM+" +o "+_PARAMS[1] );
         else
             sIRC.SendIRC("MODE "+CD->FROM+" +o "+CD->USER );
     }
-    if(_PARAMS[0] == "deop")
+    if (_PARAMS[0] == "deop")
     {
-        if(_PARAMS[1].length() > 1)
+        if (_PARAMS[1].length() > 1)
             sIRC.SendIRC("MODE "+CD->FROM+" -o "+_PARAMS[1] );
         else
             sIRC.SendIRC("MODE "+CD->FROM+" -o "+CD->USER );
     }
-    if(_PARAMS[0] == "voice")
+    if (_PARAMS[0] == "voice")
     {
-        if(_PARAMS[1].length() > 1)
+        if (_PARAMS[1].length() > 1)
             sIRC.SendIRC("MODE "+CD->FROM+" +v "+_PARAMS[1] );
         else
             sIRC.SendIRC("MODE "+CD->FROM+" +v "+CD->USER );
     }
-    if(_PARAMS[0] == "devoice")
+    if (_PARAMS[0] == "devoice")
     {
-        if(_PARAMS[1].length() > 1)
+        if (_PARAMS[1].length() > 1)
             sIRC.SendIRC("MODE "+CD->FROM+" -v "+_PARAMS[1] );
         else
             sIRC.SendIRC("MODE "+CD->FROM+" -v "+CD->USER );
@@ -256,7 +257,7 @@ void IRCCmd::Chan_Control(_CDATA *CD)
 void IRCCmd::Char_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 5);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
@@ -264,9 +265,9 @@ void IRCCmd::Char_Player(_CDATA *CD)
     normalizePlayerName(_PARAMS[0]);
     uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
     Player* plr = sObjectMgr.GetPlayer(guid);
-    if(plr)
+    if (plr)
     {
-        if(_PARAMS[1] == "mapcheat")
+        if (_PARAMS[1] == "mapcheat")
         {
             bool explore = false;
             if (_PARAMS[2] != "0")
@@ -278,7 +279,7 @@ void IRCCmd::Char_Player(_CDATA *CD)
                 else
                     plr->SetFlag(PLAYER_EXPLORED_ZONES_1+i,0);
             }
-            if(explore)
+            if (explore)
             {
                 Send_Player(plr, MakeMsg("All Your Zones Have Been Set To Explored By: %s", CD->USER.c_str()));
                 Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Now Explored All Zones.", true, CD->TYPE);
@@ -289,7 +290,7 @@ void IRCCmd::Char_Player(_CDATA *CD)
                 Send_Player(plr, MakeMsg("All Your Zones Have Been Set To Un-Explored By: %s", CD->USER.c_str()));
             }
         }
-        if(_PARAMS[1] == "taxicheat")
+        if (_PARAMS[1] == "taxicheat")
         {
             if (_PARAMS[2] != "0")
             {
@@ -304,13 +305,13 @@ void IRCCmd::Char_Player(_CDATA *CD)
                 Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Taxi Node Cheat Has Been Disabled.", true, CD->TYPE);
             }
         }
-        if(_PARAMS[1] == "maxskill")
+        if (_PARAMS[1] == "maxskill")
         {
             plr->UpdateSkillsToMaxSkillsForLevel();
             Send_Player(plr, MakeMsg("Your Skills Have Been Maxed Out By: %s", CD->USER.c_str()));
             Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Skills Have Been Maxed Out.", true, CD->TYPE);
         }
-        if(_PARAMS[1] == "setskill")
+        if (_PARAMS[1] == "setskill")
         {
             std::string* _PARAMSA = getArray(_PARAMS[2], 4);
             uint32 skill = atoi(_PARAMS[2].c_str());
@@ -318,13 +319,13 @@ void IRCCmd::Char_Player(_CDATA *CD)
             int32 max   = _PARAMS[4].c_str() ? atol (_PARAMS[4].c_str()) : plr->GetPureMaxSkillValue(skill);
             SkillLineEntry const* skilllookup = sSkillLineStore.LookupEntry(skill);
             //if skillid entered is not a number and greater then 0 then the command is being used wrong
-            if(skill >= 0)
+            if (skill >= 0)
             {
                 //does the skill even exist
-                if(skilllookup)
+                if (skilllookup)
                 {
                     //does player have the skill yet
-                    if(plr->GetSkillValue(skill))
+                    if (plr->GetSkillValue(skill))
                     {
                         plr->SetSkill(skill,level,max);
                         Send_Player(plr, MakeMsg("Skill: %s Has Been Set To Level: %i Max: %i By: %s",skilllookup->name[0], level, max, CD->USER.c_str()));
@@ -347,19 +348,19 @@ void IRCCmd::Char_Player(_CDATA *CD)
 void IRCCmd::Fun_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 3);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
     }
     if (Player* plr = GetPlayer(_PARAMS[0]))
     {
-        if(_PARAMS[1] == "say")
+        if (_PARAMS[1] == "say")
         {
             plr->Say(_PARAMS[2], LANG_UNIVERSAL);
             Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Was Forced To Say: "+_PARAMS[2]+".", true, CD->TYPE);
         }
-        if(_PARAMS[1] == "sound")
+        if (_PARAMS[1] == "sound")
         {
             uint32 sndid = atoi(_PARAMS[2].c_str());
             plr->PlayDistanceSound(sndid);
@@ -374,14 +375,14 @@ void IRCCmd::Help_IRC(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 1);
     QueryResult *result = WorldDatabase.PQuery("SELECT `Command`, `Description`, `gmlevel` FROM `IRC_Commands`");
-    if(result)
+    if (result)
     {
-        if(IsLoggedIn(CD->USER))
+        if (IsLoggedIn(CD->USER))
         {
-            if(_PARAMS[0] == "")
+            if (_PARAMS[0] == "")
             {
                 QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `IRC_Commands` WHERE `gmlevel` <= %u ORDER BY `Command`", GetLevel(CD->USER));
-                if(result)
+                if (result)
                 {
                     std::string output = "\002MangChat IRC Commands:\017 ";
                     for (uint64 i=0; i < result->GetRowCount(); i++)
@@ -397,15 +398,15 @@ void IRCCmd::Help_IRC(_CDATA *CD)
             else
             {
                 QueryResult *result = WorldDatabase.PQuery("SELECT `Description`, `gmlevel` FROM `IRC_Commands` WHERE `Command` = '%s'", _PARAMS[0].c_str());
-                if(result)
+                if (result)
                 {
                     Field *fields = result->Fetch();
-                    if(fields[1].GetUInt32() > GetLevel(CD->USER))
+                    if (fields[1].GetUInt32() > GetLevel(CD->USER))
                     {
                         Send_IRCA(CD->USER, "You Do Not Have Access To That Command, So No Help Is Available.", true, CD->TYPE.c_str());
                         return;
                     }
-                    if(result)
+                    if (result)
                     {
                         std::string cmdhlp = fields[0].GetCppString();
                         delete result;
@@ -416,12 +417,12 @@ void IRCCmd::Help_IRC(_CDATA *CD)
                     Send_IRCA(CD->USER, "\0034[ERROR] : No Such Command Exists, Please Check The Spelling And Try Again.", true, "ERROR");
             }
         }
-        else if(!IsLoggedIn(CD->USER))
+        else if (!IsLoggedIn(CD->USER))
         {
-            if(_PARAMS[0] == "")
+            if (_PARAMS[0] == "")
             {
                 QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `IRC_Commands` WHERE `gmlevel` = 0 ORDER BY `Command`");
-                if(result)
+                if (result)
                 {
                     std::string output = "\002MangChat IRC Commands:\017 ";
                     for (uint64 i=0; i < result->GetRowCount(); i++)
@@ -438,10 +439,10 @@ void IRCCmd::Help_IRC(_CDATA *CD)
             else
             {
                 QueryResult *result = WorldDatabase.PQuery("SELECT `Description`, `gmlevel` FROM `IRC_Commands` WHERE `Command` = '%s'", _PARAMS[0].c_str());
-                if(result)
+                if (result)
                 {
                     Field *fields = result->Fetch();
-                    if(fields[1].GetUInt32() > 0)
+                    if (fields[1].GetUInt32() > 0)
                     {
                         Send_IRCA(CD->USER, "You Do Not Have Access To That Command, So No Help Is Available.", true, CD->TYPE.c_str());
                         return;
@@ -462,13 +463,13 @@ void IRCCmd::Help_IRC(_CDATA *CD)
 void IRCCmd::Inchan_Server(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 1);
-    if(_PARAMS[0] == "")
+    if (_PARAMS[0] == "")
     {
         Send_IRCA(CD->USER, "\0034[ERROR] : Syntax Error! ( "+sIRC._cmd_prefx+"inchan <ChannelName> )", true, "ERROR");
         return;
     }
     QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `IRC_Inchan` WHERE `channel` = '%s' ORDER BY `name`", _PARAMS[0].c_str());
-    if(result)
+    if (result)
     {
         Field *fields = result->Fetch();
         std::string output = "\002Players In The [ "+fields[2].GetCppString()+" ] Channel:\017 ";
@@ -503,16 +504,16 @@ void IRCCmd::Item_Player(_CDATA *CD)
 
     normalizePlayerName(_PARAMS[0]);
     Player *chr = GetPlayer(_PARAMS[0].c_str());
-    if(_PARAMS[1] == "add")
+    if (_PARAMS[1] == "add")
     {
         std::string s_param  = _PARAMS[2];
 
         char *args = (char*)s_param.c_str();
         uint32 itemId = 0;
-        if(args[0]=='[')
+        if (args[0]=='[')
         {
             char* citemName = citemName = strtok((char*)args, "]");
-            if(citemName && citemName[0])
+            if (citemName && citemName[0])
             {
                 std::string itemName = citemName+1;
                 WorldDatabase.escape_string(itemName);
@@ -543,18 +544,20 @@ void IRCCmd::Item_Player(_CDATA *CD)
             delete result;
 
             char* cId = strtok(args, " ");
-            if(!cId)
+            if (!cId)
             {
                 Send_IRCA(CD->USER, "\0034[ERROR] : Syntax Error! ( "+sIRC._cmd_prefx+"item <Player> <add> <ItemID> <Amount> )", true, "ERROR");
                 return;
             }
             itemId = atol(cId);
         }
-            char* ccount = strtok(NULL, " ");
-            int32 count = 1;
-            if (ccount) { count = atol(ccount); }
-            Player* plTarget = chr;
-        if(!plTarget)
+        char* ccount = strtok(NULL, " ");
+        int32 count = 1;
+        if (ccount) {
+            count = atol(ccount);
+        }
+        Player* plTarget = chr;
+        if (!plTarget)
         {
             Send_IRCA(CD->USER, "\0034[ERROR] : "+_PARAMS[0]+" Is Not Online!", true, "ERROR");
             return;
@@ -576,9 +579,9 @@ void IRCCmd::Item_Player(_CDATA *CD)
         // check space and find places
         ItemPosCountVec dest;
         uint8 msg = plTarget->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, itemId, count, &noSpaceForCount );
-        if( msg == EQUIP_ERR_INVENTORY_FULL )                   // convert to possibel store amount
+        if ( msg == EQUIP_ERR_INVENTORY_FULL )                  // convert to possibel store amount
             count -= noSpaceForCount;
-        else if( msg != EQUIP_ERR_OK )                          // other error, can't add
+        else if ( msg != EQUIP_ERR_OK )                         // other error, can't add
         {
             char s_countForStore[255];
             sprintf(s_countForStore,"%d",count);
@@ -587,20 +590,20 @@ void IRCCmd::Item_Player(_CDATA *CD)
             return;
         }
         Item* item = plTarget->StoreNewItem( dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
-        if(count > 0 && item)
+        if (count > 0 && item)
         {
-                plTarget->SendNewItem(item,count,true,false);
-                QueryResult *result = WorldDatabase.PQuery("SELECT name FROM item_template WHERE entry = %d", itemId);
-                char* dbitemname = NULL;
-                if (result)
-                {
-                    dbitemname = (char*)result->Fetch()->GetString();
-                }
-                std::string iinfo = " \00313[" + _PARAMS[0] + "] : Has Been Given Item "+dbitemname+". From: "+CD->USER.c_str()+".";
-                Send_IRCA(ChanOrPM(CD), iinfo, true, CD->TYPE);
-                delete result;
+            plTarget->SendNewItem(item,count,true,false);
+            QueryResult *result = WorldDatabase.PQuery("SELECT name FROM item_template WHERE entry = %d", itemId);
+            char* dbitemname = NULL;
+            if (result)
+            {
+                dbitemname = (char*)result->Fetch()->GetString();
+            }
+            std::string iinfo = " \00313[" + _PARAMS[0] + "] : Has Been Given Item "+dbitemname+". From: "+CD->USER.c_str()+".";
+            Send_IRCA(ChanOrPM(CD), iinfo, true, CD->TYPE);
+            delete result;
         }
-        if(noSpaceForCount > 0)
+        if (noSpaceForCount > 0)
         {
             char s_countForStore[255];
             sprintf(s_countForStore,"%d",noSpaceForCount);
@@ -618,10 +621,10 @@ void IRCCmd::Item_Player(_CDATA *CD)
 
 void IRCCmd::Jail_Player(_CDATA *CD)
 {
-    if(ValidParams(CD->PARAMS, 1))
+    if (ValidParams(CD->PARAMS, 1))
     {
         std::string* _PARAMS = getArray(CD->PARAMS, 2);
-        if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+        if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
         {
             Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
             return;
@@ -629,13 +632,13 @@ void IRCCmd::Jail_Player(_CDATA *CD)
         if (Player *plr = GetPlayer(_PARAMS[0]))
         {
             std::string sReason = "";
-            if(_PARAMS[1] == "release")
+            if (_PARAMS[1] == "release")
             {
                 float rposx, rposy, rposz, rposo = 0;
                 uint32 rmapid = 0;
                 CharacterDatabase.escape_string(_PARAMS[0]);
                 QueryResult *result = CharacterDatabase.PQuery( "SELECT `map`, `position_x`, `position_y`, `position_z` FROM `character_homebind` WHERE `guid` = '" UI64FMTD "'", plr->GetGUID() );
-                if(result)
+                if (result)
                 {
                     Field *fields = result->Fetch();
                     rmapid = fields[0].GetUInt16();
@@ -655,7 +658,7 @@ void IRCCmd::Jail_Player(_CDATA *CD)
             }
             else
             {
-                if(_PARAMS[1] == "")
+                if (_PARAMS[1] == "")
                     _PARAMS[1] = "No Reason Given.";
                 plr->TeleportTo(13, 0, 0, 0, 0);
                 plr->SetMovement(MOVE_ROOT);
@@ -675,12 +678,12 @@ void IRCCmd::Jail_Player(_CDATA *CD)
 void IRCCmd::Kick_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, CD->PCOUNT);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
     }
-    if(_PARAMS[1] == "")
+    if (_PARAMS[1] == "")
         _PARAMS[1] = "No Reason Given.";
     if (Player* plr = GetPlayer(_PARAMS[0]))
     {
@@ -694,18 +697,18 @@ void IRCCmd::Kick_Player(_CDATA *CD)
 void IRCCmd::Kill_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, CD->PCOUNT);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
     }
     if (Player* plr = GetPlayer(_PARAMS[0]))
     {
-        if(plr->isAlive())
+        if (plr->isAlive())
         {
             plr->DealDamage(plr, plr->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
             plr->SaveToDB();
-            if(_PARAMS[1] == "")
+            if (_PARAMS[1] == "")
                 _PARAMS[1] = "No Reason Given.";
             Send_IRCA(ChanOrPM(CD), MakeMsg("\00313[%s] : Has Been Killed By: %s.", _PARAMS[0].c_str(), CD->USER.c_str()) +  +  + " Reason: "+_PARAMS[1]+".", true, CD->TYPE);
             Send_Player(plr, MakeMsg("You Have Been Killed By: %s. Reason: %s.", CD->USER.c_str(), _PARAMS[1].c_str()));
@@ -720,16 +723,16 @@ void IRCCmd::Kill_Player(_CDATA *CD)
 void IRCCmd::Lookup_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, CD->PCOUNT);
-    if(_PARAMS[0] == "acct")
+    if (_PARAMS[0] == "acct")
     {
         uint32 acctid = atoi(_PARAMS[1].c_str());
-		if(sAccountMgr.GetId(_PARAMS[1]))
+        if (sAccountMgr.GetId(_PARAMS[1]))
             acctid = sAccountMgr.GetId(_PARAMS[1]);
-        if(acctid > 0)
-        {       
+        if (acctid > 0)
+        {
             std::string DateTime = "%a, %b %d, %Y - %h:%i%p";
             QueryResult *result = loginDatabase.PQuery("SELECT id, username, gmlevel, last_ip, (SELECT banreason FROM account_banned WHERE id = %d LIMIT 1) as banned, (SELECT banreason FROM ip_banned WHERE ip = last_ip) as bannedip, DATE_FORMAT(last_login, '%s') FROM `account` WHERE id = %d", acctid, DateTime.c_str(), acctid, acctid);
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
 
@@ -745,13 +748,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 QueryResult *chars = CharacterDatabase.PQuery("SELECT guid, name, (SELECT SUM(totaltime) FROM characters WHERE account = %d) AS tottime FROM characters WHERE account = %u", id, id);
                 std::string characters = "None";
                 std::string totaccttime = "Never Logged In";
-                if(chars)
+                if (chars)
                 {
                     characters = "";
                     Field *fields = chars->Fetch();
                     totaccttime = SecToDay(fields[2].GetCppString());
                     for (uint64 i=0; i < chars->GetRowCount(); i++)
-                    {   
+                    {
                         std::string guid = fields[0].GetCppString();
                         std::string charname = fields[1].GetCppString();
                         characters.append(charname+"("+guid+"), ");
@@ -761,9 +764,9 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 }
                 Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Username:\x3\x31\x30 %s \xF|\x2 AccountID:\x3\x31\x30 %d \xF|\x2 GM Level:\x3\x31\x30 %d \xF|\x2 Last IP:\x3\x31\x30 %s \xF|\x2 Last Login:\x3\x31\x30 %s", usrname.c_str(), id, gm, lastip.c_str(), lastlogin.c_str()), true, CD->TYPE);
                 Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Total Play Time:\x3\x31\x30 %s \xF|\x2 Characters:\x3\x31\x30 %s ", totaccttime.c_str(), characters.c_str()), true, CD->TYPE);
-                if(banreason.length() > 1)
+                if (banreason.length() > 1)
                     Send_IRCA(ChanOrPM(CD), MakeMsg("\0034This User Has An Account Ban. Ban Reason: %s", banreason.c_str()), true, CD->TYPE);
-                if(banreasonip.length() > 1)
+                if (banreasonip.length() > 1)
                     Send_IRCA(ChanOrPM(CD), MakeMsg("\0034This User Has An IP Ban. Ban Reason: %s", banreasonip.c_str()), true, CD->TYPE);
             }
             else
@@ -772,12 +775,12 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = loginDatabase.PQuery("SELECT id, username FROM `account` WHERE username LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string accts = "\002Account Search Results:\x3\x31\x30 ";
                 for (uint64 i=0; i < result->GetRowCount(); i++)
-                {   
+                {
                     std::string acctid = fields[0].GetCppString();
                     std::string acctname = fields[1].GetCppString();
                     accts.append(acctname+"("+acctid+")\xF | \x3\x31\x30\x2");
@@ -789,24 +792,24 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
             else
                 Send_IRCA(CD->USER, "\0034[ERROR] : Unknown Username. I Cant Find Any Users With Those Search Terms." ,true, "ERROR");
         }
-    }   
-    if(_PARAMS[0] == "char")
+    }
+    if (_PARAMS[0] == "char")
     {
         uint32 plguid = atoi(_PARAMS[1].c_str());
-        if(sObjectMgr.GetPlayerGUIDByName(_PARAMS[1].c_str()))
+        if (sObjectMgr.GetPlayerGUIDByName(_PARAMS[1].c_str()))
             plguid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[1].c_str());
-        if(plguid > 0)
-        {       
+        if (plguid > 0)
+        {
             QueryResult *result = CharacterDatabase.PQuery("SELECT guid, account, name, race, class, online, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 35), ' ' , -1) AS level, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 238), ' ' , -1) AS guildid, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 239), ' ' , -1) AS guildrank, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 927), ' ' , -1) AS xp, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 928), ' ' , -1) AS maxxp, SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS gold, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 1454), ' ' , -1) AS hk, totaltime FROM characters WHERE guid =%i", plguid);
             uint32 latency = 0;
             Player *chr = sObjectMgr.GetPlayer(plguid);
-            if(chr) 
+            if (chr)
             {
                 latency = chr->GetSession()->GetLatency();
             }
             char templatency [100];
             sprintf(templatency, "%ums", latency);
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string pguid = fields[0].GetCppString();
@@ -876,12 +879,12 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = CharacterDatabase.PQuery("SELECT guid, account, name FROM characters WHERE name LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string items = "\x2 Character Search Results:\x3\x31\x30 ";
                 for (uint64 i=0; i < result->GetRowCount(); i++)
-                {   
+                {
                     std::string guid = fields[0].GetCppString();
                     std::string account = fields[1].GetCppString();
                     std::string name = fields[2].GetCppString();
@@ -895,15 +898,15 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
             else
                 Send_IRCA(CD->USER, "\0034[ERROR] : Unknown Character. I Cant Find Any Characters With Those Search Terms." ,true, "ERROR");
         }
-    }   
-    if(_PARAMS[0] == "creature")
+    }
+    if (_PARAMS[0] == "creature")
     {
         std::string creature = _PARAMS[1];
-        if(atoi(creature.c_str()) > 0)
+        if (atoi(creature.c_str()) > 0)
         {
             WorldDatabase.escape_string(_PARAMS[1]);
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, modelid_A, name, (minlevel*maxlevel/2) as level, faction_A, armor,  (SELECT count(*) FROM creature WHERE id = '%s') as spawns FROM creature_template WHERE entry = '%s';", _PARAMS[1].c_str(), _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
 
@@ -925,13 +928,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, name FROM creature_template WHERE name LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string items = "\002Creature Search Results:\x3\x31\x30 ";
                 //Send_IRCA(ChanOrPM(CD), "", true, CD->TYPE);
                 for (uint64 i=0; i < result->GetRowCount(); i++)
-                {   
+                {
                     std::string CreatureID = fields[0].GetCppString();
                     std::string Name = fields[1].GetCppString();
                     items.append(Name+"("+CreatureID+")\xF | \x3\x31\x30\x2");
@@ -944,13 +947,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 Send_IRCA(CD->USER, "\0034[ERROR] : Unknown Creature. I Cant Find Any Creatures With Those Search Terms." ,true, "ERROR");
         }
     }
-    if(_PARAMS[0] == "faction")
+    if (_PARAMS[0] == "faction")
     {
         std::string faction = _PARAMS[1];
-        if(atoi(faction.c_str()) > 0)
-        {       
+        if (atoi(faction.c_str()) > 0)
+        {
             FactionEntry const *factionEntry = sFactionStore.LookupEntry(atoi(faction.c_str()));
-            if(factionEntry)
+            if (factionEntry)
             {
                 std::string name = factionEntry->name[sWorld.GetDefaultDbcLocale()];
                 Send_IRCA(ChanOrPM(CD), MakeMsg("\x2 Faction:\x3\x31\x30 %s \xF|\x2 FactionID:\x3\x31\x30 %s",name.c_str(), faction.c_str()), true, CD->TYPE);
@@ -966,7 +969,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
             for (uint32 id = 0; id < sFactionStore.GetNumRows(); id++)
             {
                 FactionEntry const *factionEntry = sFactionStore.LookupEntry(id);
-                if(factionEntry)
+                if (factionEntry)
                 {
                     MakeLower( _PARAMS[1] );
                     std::string name = factionEntry->name[sWorld.GetDefaultDbcLocale()];
@@ -975,24 +978,24 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                     {
                         char factionid[100];
                         sprintf(factionid, "%d", id);
-                        factions.append(name+"("+factionid+")\xF | \x3\x31\x30\x2");            
-                        ++counter;                      
+                        factions.append(name+"("+factionid+")\xF | \x3\x31\x30\x2");
+                        ++counter;
                     }
                 }
             }
-            if(counter == 0)
+            if (counter == 0)
                 factions.append("No Factions Found.");
             Send_IRCA(ChanOrPM(CD), factions, true, CD->TYPE);
         }
     }
-    if(_PARAMS[0] == "go")
+    if (_PARAMS[0] == "go")
     {
         std::string gobject = _PARAMS[1];
-        if(atoi(gobject.c_str()) > 0)
-        {       
+        if (atoi(gobject.c_str()) > 0)
+        {
             WorldDatabase.escape_string(_PARAMS[1]);
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, type, displayId, name, faction, (SELECT count(*) FROM gameobject WHERE id = '%s') as spawns FROM gameobject_template WHERE entry = '%s';", _PARAMS[1].c_str(), _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
 
@@ -1013,12 +1016,12 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, name FROM gameobject_template WHERE name LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string gos = "\002Gameobject Search Results:\x3\x31\x30 ";
                 for (uint64 i=0; i < result->GetRowCount(); i++)
-                {   
+                {
                     std::string GOID = fields[0].GetCppString();
                     std::string GoName = fields[1].GetCppString();
                     gos.append(GoName+"("+GOID+")\xF | \x3\x31\x30\x2");
@@ -1031,13 +1034,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 Send_IRCA(CD->USER, "\0034[ERROR] : Unknown Game Object. I Cant Find Any Game Object's With Those Search Terms." ,true, "ERROR");
         }
     }
-    if(_PARAMS[0] == "item")
+    if (_PARAMS[0] == "item")
     {
         std::string item = _PARAMS[1];
-        if(atoi(item.c_str()) > 0)
-        {       
+        if (atoi(item.c_str()) > 0)
+        {
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, name, displayid, (SELECT count(*) FROM creature_loot_template WHERE item = '%s') as loot FROM `item_template` WHERE entry = %s", _PARAMS[1].c_str(), _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 QueryResult *result2 = CharacterDatabase.PQuery("SELECT count(*) FROM `character_inventory` WHERE item_template = %s", _PARAMS[1].c_str());
@@ -1059,12 +1062,12 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, name FROM `item_template` WHERE name LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string items = "\002Item Search Results:\x3\x31\x30 ";
                 for (uint64 i=0; i < result->GetRowCount(); i++)
-                {   
+                {
                     std::string ItemID = fields[0].GetCppString();
                     std::string ItemName = fields[1].GetCppString();
                     items.append(ItemName+"("+ItemID+")\xF | \x3\x31\x30\x2");
@@ -1077,14 +1080,14 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 Send_IRCA(CD->USER, "\0034[ERROR] : Unknown Item. I Cant Find Any Items With Those Search Terms." ,true, "ERROR");
         }
     }
-    if(_PARAMS[0] == "quest")
+    if (_PARAMS[0] == "quest")
     {
         std::string quest = _PARAMS[1];
-        if(atoi(quest.c_str()) > 0)
-        {       
+        if (atoi(quest.c_str()) > 0)
+        {
             WorldDatabase.escape_string(_PARAMS[1]);
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, Title FROM quest_template WHERE entry = '%s';", _PARAMS[1].c_str(), _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 QueryResult *result2 = CharacterDatabase.PQuery("SELECT count(*) FROM character_queststatus WHERE quest = '%s' AND status = '1';", _PARAMS[1].c_str());
                 Field *fields2 = result2->Fetch();
@@ -1103,13 +1106,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = WorldDatabase.PQuery("SELECT entry, Title FROM quest_template WHERE Title LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string quests = "\002Quest Search Results:\x3\x31\x30 ";
                 //Send_IRCA(ChanOrPM(CD), "", true, CD->TYPE);
                 for (uint64 i=0; i < result->GetRowCount(); i++)
-                {   
+                {
                     std::string QuestID = fields[0].GetCppString();
                     std::string QuestName = fields[1].GetCppString();
                     quests.append(QuestName+"("+QuestID+")\xF | \x3\x31\x30\x2");
@@ -1122,13 +1125,13 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 Send_IRCA(CD->USER, "\0034[ERROR] : Unknown Quest. I Cant Find Any Quest's With Those Search Terms." ,true, "ERROR");
         }
     }
-    if(_PARAMS[0] == "skill")
+    if (_PARAMS[0] == "skill")
     {
         std::string skill = _PARAMS[1];
-        if(atoi(skill.c_str()) > 0)
+        if (atoi(skill.c_str()) > 0)
         {
             SkillLineEntry const *skillInfo = sSkillLineStore.LookupEntry(atoi(skill.c_str()));
-            if(skillInfo)
+            if (skillInfo)
             {
                 std::string name = skillInfo->name[sWorld.GetDefaultDbcLocale()];
                 Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Skill:\x3\x31\x30 %s \xF|\x2 SkillID:\x3\x31\x30 %s",name.c_str(), skill.c_str()), true, CD->TYPE);
@@ -1144,7 +1147,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
             for (uint32 id = 0; id < sSkillLineStore.GetNumRows(); id++)
             {
                 SkillLineEntry const *skillInfo = sSkillLineStore.LookupEntry(id);
-                if(skillInfo)
+                if (skillInfo)
                 {
                     MakeLower( _PARAMS[1] );
                     std::string name = skillInfo->name[sWorld.GetDefaultDbcLocale()];
@@ -1158,18 +1161,18 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                     }
                 }
             }
-            if(counter == 0)
+            if (counter == 0)
                 skills.append("No Skills Found.");
             Send_IRCA(ChanOrPM(CD), skills, true, CD->TYPE);
         }
     }
-    if(_PARAMS[0] == "spell")
+    if (_PARAMS[0] == "spell")
     {
         std::string spell = _PARAMS[1];
-        if(atoi(spell.c_str()) > 0)
+        if (atoi(spell.c_str()) > 0)
         {
             SpellEntry const *spellInfo = sSpellStore.LookupEntry(atoi(spell.c_str()));
-            if(spellInfo)
+            if (spellInfo)
             {
                 std::string name = spellInfo->SpellName[sWorld.GetDefaultDbcLocale()];
                 Send_IRCA(ChanOrPM(CD), MakeMsg("\x2Spell:\x3\x31\x30 %s \xF|\x2 SpellID:\x3\x31\x30 %s",name.c_str(), spell.c_str()), true, CD->TYPE);
@@ -1185,7 +1188,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
             for (uint32 id = 0; id < sSpellStore.GetNumRows(); id++)
             {
                 SpellEntry const *spellInfo = sSpellStore.LookupEntry(id);
-                if(spellInfo)
+                if (spellInfo)
                 {
                     MakeLower( _PARAMS[1] );
                     std::string name = spellInfo->SpellName[sWorld.GetDefaultDbcLocale()];
@@ -1199,18 +1202,18 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                     }
                 }
             }
-            if(counter == 0)
+            if (counter == 0)
                 spells.append("No Spells Found.");
             Send_IRCA(ChanOrPM(CD), spells, true, CD->TYPE);
         }
     }
-    if(_PARAMS[0] == "tele")
+    if (_PARAMS[0] == "tele")
     {
         std::string tele = _PARAMS[1];
-        if(atoi(tele.c_str()) > 0)
+        if (atoi(tele.c_str()) > 0)
         {
             QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `game_tele` WHERE id = %s", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
 
@@ -1231,7 +1234,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
         else
         {
             QueryResult *result = WorldDatabase.PQuery("SELECT id, name FROM `game_tele` WHERE name LIKE '%%%s%%' LIMIT 10", _PARAMS[1].c_str());
-            if(result)
+            if (result)
             {
                 Field *fields = result->Fetch();
                 std::string teles = "\002Tele Location Search Results:\x3\x31\x30 ";
@@ -1254,7 +1257,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
 void IRCCmd::Level_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, CD->PCOUNT);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
@@ -1264,7 +1267,7 @@ void IRCCmd::Level_Player(_CDATA *CD)
     uint64 guid = sObjectMgr.GetPlayerGUIDByName(player.c_str());
     std::string s_newlevel  = _PARAMS[1];
     uint8 i_newlvl = atoi(s_newlevel.c_str());
-    if(!guid)
+    if (!guid)
     {
         Send_IRCA(CD->USER, "\0034[ERROR] : Player Not Found!", true, "ERROR");
         return;
@@ -1276,21 +1279,21 @@ void IRCCmd::Level_Player(_CDATA *CD)
     {
         Player *chr = sObjectMgr.GetPlayer(guid);
         int32 i_oldlvl = chr ? chr->getLevel() : Player::GetUInt32ValueFromDB(UNIT_FIELD_LEVEL,guid);
-        if(chr)
+        if (chr)
         {
             chr->GiveLevel(i_newlvl);
             chr->InitTalentForLevel();
             chr->SetUInt32Value(PLAYER_XP,0);
             WorldPacket data;
             ChatHandler CH(chr->GetSession());
-            if(i_oldlvl == i_newlvl)
+            if (i_oldlvl == i_newlvl)
                 CH.FillSystemMessageData(&data, "Your level progress has been reset.");
             else
-            if(i_oldlvl < i_newlvl)
-                CH.FillSystemMessageData(&data, fmtstring("You have been leveled up (%i)",i_newlvl-i_oldlvl));
-            else
-            if(i_oldlvl > i_newlvl)
-                CH.FillSystemMessageData(&data, fmtstring("You have been leveled down (%i)",i_newlvl-i_oldlvl));
+                if (i_oldlvl < i_newlvl)
+                    CH.FillSystemMessageData(&data, fmtstring("You have been leveled up (%i)",i_newlvl-i_oldlvl));
+                else
+                    if (i_oldlvl > i_newlvl)
+                        CH.FillSystemMessageData(&data, fmtstring("You have been leveled down (%i)",i_newlvl-i_oldlvl));
             chr->GetSession()->SendPacket( &data );
         }
         else
@@ -1308,7 +1311,7 @@ void IRCCmd::Level_Player(_CDATA *CD)
 void IRCCmd::Money_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 2);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
@@ -1325,7 +1328,7 @@ void IRCCmd::Money_Player(_CDATA *CD)
     unsigned int cop = (money % 10000) % 100;
     char tempgold [100];
     sprintf(tempgold, "\x2\x3\x30\x37%ug \x3\x31\x34%us \x3\x30\x35%uc\xF", gold, silv, cop);
-    if(!guid)
+    if (!guid)
     {
         Send_IRCA(CD->USER, "\0034[ERROR] : Player Not Found!", true, "ERROR");
         return;
@@ -1334,80 +1337,80 @@ void IRCCmd::Money_Player(_CDATA *CD)
     {
         Player *chr = sObjectMgr.GetPlayer(guid);
         uint32 moneyuser = 0;
-        if(chr)
+        if (chr)
             moneyuser = chr->GetMoney();
         else {
-        CharacterDatabase.escape_string(player);
-        std::string sqlquery = "SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS `gold` FROM `characters` WHERE `name` = '"+player+"';";
-        QueryResult *result = CharacterDatabase.Query(sqlquery.c_str());
+            CharacterDatabase.escape_string(player);
+            std::string sqlquery = "SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS `gold` FROM `characters` WHERE `name` = '"+player+"';";
+            QueryResult *result = CharacterDatabase.Query(sqlquery.c_str());
             Field *fields = result->Fetch();
             moneyuser = fields[0].GetInt32();
             delete result;
         }
-            int32 addmoney = money;
-            int32 newmoney = moneyuser + addmoney;
-            char s_newmoney[255];
-            sprintf(s_newmoney,"%d",newmoney);
-            if(addmoney < 0)
+        int32 addmoney = money;
+        int32 newmoney = moneyuser + addmoney;
+        char s_newmoney[255];
+        sprintf(s_newmoney,"%d",newmoney);
+        if (addmoney < 0)
+        {
+            sLog.outDetail("USER1: %i, ADD: %i, DIF: %i\\n", moneyuser, addmoney, newmoney);
+            if (newmoney <= 0 )
             {
-                sLog.outDetail("USER1: %i, ADD: %i, DIF: %i\\n", moneyuser, addmoney, newmoney);
-                if(newmoney <= 0 )
+                Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had All Money Taken By: "+CD->USER.c_str()+".", true, CD->TYPE);
+                if (chr)
                 {
-                    Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had All Money Taken By: "+CD->USER.c_str()+".", true, CD->TYPE);
-                    if(chr)
-                    {
-                        chr->SetMoney(0);
-                        Send_Player(chr, MakeMsg("You Have Been Liquidated By: %s. Total Money Is Now 0.", CD->USER.c_str()));
-                    }
-                    else
-                        CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
-                }
-                else
-                {
-                    Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had ("+s_money+"\00313) Taken From Them By: "+CD->USER.c_str()+".", true, CD->TYPE);
-                    if(chr)
-                    {
-                        chr->SetMoney( newmoney );
-                        Send_Player(chr, MakeMsg("You Have Had %s Copper Taken From You By: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
-                    }
-                    else
-                        CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
-                }
-            }
-            else
-            {
-                Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Been Given ("+tempgold+"\00313) From: "+CD->USER.c_str()+".", true, CD->TYPE);
-                if(chr)
-                {
-                    chr->ModifyMoney( addmoney );
-                    Send_Player(chr, MakeMsg("You Have Been Given %s Copper. From: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
+                    chr->SetMoney(0);
+                    Send_Player(chr, MakeMsg("You Have Been Liquidated By: %s. Total Money Is Now 0.", CD->USER.c_str()));
                 }
                 else
                     CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
             }
+            else
+            {
+                Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had ("+s_money+"\00313) Taken From Them By: "+CD->USER.c_str()+".", true, CD->TYPE);
+                if (chr)
+                {
+                    chr->SetMoney( newmoney );
+                    Send_Player(chr, MakeMsg("You Have Had %s Copper Taken From You By: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
+                }
+                else
+                    CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
+            }
+        }
+        else
+        {
+            Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Been Given ("+tempgold+"\00313) From: "+CD->USER.c_str()+".", true, CD->TYPE);
+            if (chr)
+            {
+                chr->ModifyMoney( addmoney );
+                Send_Player(chr, MakeMsg("You Have Been Given %s Copper. From: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
+            }
+            else
+                CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
+        }
     }
 }
 
 void IRCCmd::Mute_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 3);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
     }
     normalizePlayerName(_PARAMS[0]);
     uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
-    if(guid)
+    if (guid)
     {
-        if(_PARAMS[1] == "release")
+        if (_PARAMS[1] == "release")
         {
             Player* plr = sObjectMgr.GetPlayer(guid);
             uint32 account_id = 0;
             account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
             loginDatabase.PExecute("UPDATE `account` SET `mutetime` = '0' WHERE `id` = '%u'", account_id );
             Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been UnMuted By: "+CD->USER+"." , true, CD->TYPE);
-            if(plr)
+            if (plr)
             {
                 plr->GetSession()->m_muteTime = 0;
                 Send_Player(plr, MakeMsg("You Have Been UnMuted By: %s.", CD->USER.c_str()));
@@ -1415,16 +1418,16 @@ void IRCCmd::Mute_Player(_CDATA *CD)
         }
         else
         {
-            if(_PARAMS[2] == "")
+            if (_PARAMS[2] == "")
                 _PARAMS[2] = "No Reason Given";
             Player* plr = sObjectMgr.GetPlayer(guid);
             time_t mutetime = time(NULL) + atoi(_PARAMS[1].c_str())*60;
             uint32 account_id = 0;
             account_id = sObjectMgr.GetPlayerAccountIdByGUID(guid);
-            if(plr) plr->GetSession()->m_muteTime = mutetime;
+            if (plr) plr->GetSession()->m_muteTime = mutetime;
             loginDatabase.PExecute("UPDATE `account` SET `mutetime` = " UI64FMTD " WHERE `id` = '%u'",uint64(mutetime), account_id );
             Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Been Muted By: "+CD->USER+". For: "+_PARAMS[1]+" Minutes. Reason: "+_PARAMS[2] , true, CD->TYPE);
-            if(plr) Send_Player(plr, MakeMsg("You Have Been Muted By: %s. For: %s Minutes. Reason: %s", CD->USER.c_str(), _PARAMS[1].c_str(), _PARAMS[2].c_str()));
+            if (plr) Send_Player(plr, MakeMsg("You Have Been Muted By: %s. For: %s Minutes. Reason: %s", CD->USER.c_str(), _PARAMS[1].c_str(), _PARAMS[2].c_str()));
         }
     }
     else
@@ -1433,8 +1436,8 @@ void IRCCmd::Mute_Player(_CDATA *CD)
 
 void IRCCmd::Online_Players(_CDATA *CD)
 {
-        sIRC.Script_Lock[MCS_Players_Online] = true;
-        ACE_Based::Thread script(new mcs_OnlinePlayers(CD));
+    sIRC.Script_Lock[MCS_Players_Online] = true;
+    ACE_Based::Thread script(new mcs_OnlinePlayers(CD));
 }
 
 void IRCCmd::PM_Player(_CDATA *CD)
@@ -1442,7 +1445,7 @@ void IRCCmd::PM_Player(_CDATA *CD)
     std::string* _PARAMS = getArray(CD->PARAMS, 2);
     if (Player* plr = GetPlayer(_PARAMS[0]))
     {
-        if(plr->isAcceptWhispers())
+        if (plr->isAcceptWhispers())
         {
             std::string sMsg = MakeMsg("|cffFE87FD[<IRC>%s] Whispers: %s|r", CD->USER.c_str(), _PARAMS[1].c_str());
             WorldPacket data(SMSG_MESSAGECHAT, 200);
@@ -1470,7 +1473,7 @@ void IRCCmd::Revive_Player(_CDATA *CD)
     std::string* _PARAMS = getArray(CD->PARAMS, CD->PCOUNT);
     if (Player* plr = GetPlayer(_PARAMS[0]))
     {
-        if(plr->isDead())
+        if (plr->isDead())
         {
             plr->ResurrectPlayer(0.5f);
             plr->SpawnCorpseBones();
@@ -1494,7 +1497,7 @@ void IRCCmd::Saveall_Player(_CDATA *CD)
 void IRCCmd::Shutdown_Mangos(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 1);
-    if(_PARAMS[0] == "cancel")
+    if (_PARAMS[0] == "cancel")
     {
         sWorld.ShutdownCancel();
         Send_IRCA(ChanOrPM(CD), "\0034Server Shutdown Has Been Cancelled.", true, CD->TYPE);
@@ -1507,7 +1510,7 @@ void IRCCmd::Shutdown_Mangos(_CDATA *CD)
         return;
     }
     if (i_time > 1) Send_IRCA(ChanOrPM(CD), "\00313["+CD->USER+"] : Has Requested Server To Be Shut Down In "+_PARAMS[0]+" Seconds!", true, CD->TYPE);
-	sWorld.ShutdownServ(i_time, 0, 0);
+    sWorld.ShutdownServ(i_time, 0, 0);
     Delay(i_time*1000);
     Send_IRCA(ChanOrPM(CD), "\0034Server Will Now Shut Down.. Good Bye!", true, CD->TYPE);
     sIRC.Active = false;
@@ -1517,7 +1520,7 @@ void IRCCmd::Shutdown_Mangos(_CDATA *CD)
 void IRCCmd::Spell_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 3);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
@@ -1526,20 +1529,20 @@ void IRCCmd::Spell_Player(_CDATA *CD)
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell);
     if (Player* plr = GetPlayer(_PARAMS[0]))
     {
-        if(spellInfo)
+        if (spellInfo)
         {
             std::string name = spellInfo->SpellName[sWorld.GetDefaultDbcLocale()];
-            if(_PARAMS[1] == "cast")
+            if (_PARAMS[1] == "cast")
             {
                 plr->CastSpell(plr, spell, true);
                 Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Had Spell "+name+" Casted On Them.", true, CD->TYPE);
             }
-            if(_PARAMS[1] == "learn")
+            if (_PARAMS[1] == "learn")
             {
                 plr->learnSpell(spell,false);
                 Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Learned Spell "+name+".", true, CD->TYPE);
             }
-            if(_PARAMS[1] == "unlearn")
+            if (_PARAMS[1] == "unlearn")
             {
                 plr->removeSpell(spell);
                 Send_IRCA(ChanOrPM(CD), "\00313["+_PARAMS[0]+"] : Has Unlearned Spell "+name+".", true, CD->TYPE);
@@ -1555,7 +1558,7 @@ void IRCCmd::Spell_Player(_CDATA *CD)
 void IRCCmd::Tele_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 4);
-    if(AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
+    if (AcctLevel(_PARAMS[0]) > GetLevel(CD->USER) && (sIRC.BOTMASK & 512)!= 0)
     {
         Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : Nice Try, This Player Has A Higher GM Level Than You! [ %i ]", AcctLevel(_PARAMS[0])), true, "ERROR");
         return;
@@ -1566,17 +1569,17 @@ void IRCCmd::Tele_Player(_CDATA *CD)
     std::string rMsg = " \0034[ERROR] : Teleport Failed!";
     std::string wMsg = "Invalid Tele Location";
     Player* plr = GetPlayer(_PARAMS[0]);
-    if(plr)
+    if (plr)
     {
-        if(plr->isInFlight() || plr->isInCombat())
+        if (plr->isInFlight() || plr->isInCombat())
         {
             Send_IRCA(CD->USER, MakeMsg("\0034[ERROR] : %s Is Busy And Cannot Be Teleported! They Could Be In Combat, Or Flying.",_PARAMS[0].c_str()), true, "ERROR");
             return;
         }
     }
-    if(_PARAMS[1] == "l" || _PARAMS[1].size() > 2)
+    if (_PARAMS[1] == "l" || _PARAMS[1].size() > 2)
     {
-        if(_PARAMS[1].size() > 1)
+        if (_PARAMS[1].size() > 1)
             _PARAMS[2] = _PARAMS[1];
         WorldDatabase.escape_string(_PARAMS[2]);
         QueryResult *result = WorldDatabase.PQuery("SELECT position_x, position_y, position_z, orientation, map FROM game_tele WHERE name='%s';", _PARAMS[2].c_str());
@@ -1590,12 +1593,12 @@ void IRCCmd::Tele_Player(_CDATA *CD)
             mapid = fields[4].GetUInt16();
             delete result;
             rMsg = MakeMsg(" \00313[%s] : Teleported To %s! By: %s.",
-                _PARAMS[0].c_str(),
-                _PARAMS[2].c_str(),
-                CD->USER.c_str());
+                           _PARAMS[0].c_str(),
+                           _PARAMS[2].c_str(),
+                           CD->USER.c_str());
             wMsg = MakeMsg("You Have Been Teleported To %s By: %s.",
-                _PARAMS[2].c_str(),
-                CD->USER.c_str());
+                           _PARAMS[2].c_str(),
+                           CD->USER.c_str());
             DoTeleport = true;
         }
         else
@@ -1619,10 +1622,10 @@ void IRCCmd::Tele_Player(_CDATA *CD)
             }
             else
                 Send_IRCA(CD->USER, "\0034[ERROR] : Location Not Found! Nothing Even Close Found!", true, "ERROR");
-                return;
+            return;
         }
     }
-    else if(_PARAMS[1] == "c")
+    else if (_PARAMS[1] == "c")
     {
         std::string* _PARAMSA = getArray(_PARAMS[2], 4);
         pX = atof(_PARAMSA[1].c_str());
@@ -1630,23 +1633,23 @@ void IRCCmd::Tele_Player(_CDATA *CD)
         pZ = atof(_PARAMSA[3].c_str());
         mapid = atoi(_PARAMSA[0].c_str());
         rMsg = MakeMsg(" \00313[%s] : Teleported To Map: %s. Position: X(%s) Y(%s) Z(%s)! By: %s.",
-            _PARAMS[0].c_str(),
-            _PARAMSA[0].c_str(),
-            _PARAMSA[1].c_str(),
-            _PARAMSA[2].c_str(),
-            _PARAMSA[3].c_str(),
-            CD->USER.c_str());
+                       _PARAMS[0].c_str(),
+                       _PARAMSA[0].c_str(),
+                       _PARAMSA[1].c_str(),
+                       _PARAMSA[2].c_str(),
+                       _PARAMSA[3].c_str(),
+                       CD->USER.c_str());
         wMsg = MakeMsg("You Have Been Teleported To Map: %s. Position: X(%s) Y(%s) Z(%s)! By: %s.",
-            _PARAMSA[0].c_str(),
-            _PARAMSA[1].c_str(),
-            _PARAMSA[2].c_str(),
-            _PARAMSA[3].c_str(),
-            CD->USER.c_str());
+                       _PARAMSA[0].c_str(),
+                       _PARAMSA[1].c_str(),
+                       _PARAMSA[2].c_str(),
+                       _PARAMSA[3].c_str(),
+                       CD->USER.c_str());
         DoTeleport = true;
     }
-    else if(_PARAMS[1] == "r")
+    else if (_PARAMS[1] == "r")
     {
-        if(plr)
+        if (plr)
         {
             pX = plr->m_recallX;
             pY = plr->m_recallY;
@@ -1654,9 +1657,9 @@ void IRCCmd::Tele_Player(_CDATA *CD)
             pO = plr->m_recallO;
             mapid = plr->m_recallMap;
             rMsg = MakeMsg(" \00313[%s] : Has Been Recalled To Their Previous Location.",
-                _PARAMS[0].c_str());
+                           _PARAMS[0].c_str());
             wMsg = MakeMsg("You Have Been Recalled To Your Previous Location. By: %s",
-                CD->USER.c_str());
+                           CD->USER.c_str());
             DoTeleport = true;
         }
         else
@@ -1666,17 +1669,17 @@ void IRCCmd::Tele_Player(_CDATA *CD)
         }
 
     }
-    else if(_PARAMS[1] == "to")
+    else if (_PARAMS[1] == "to")
     {
         Player* plr2 = GetPlayer(_PARAMS[2]);
-        if(plr2)
+        if (plr2)
         {
             plr2->GetContactPoint(plr, pX, pY, pZ);
             mapid = plr2->GetMapId();
         }
         else
         {
-            if(uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[2].c_str()))
+            if (uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[2].c_str()))
             {
                 bool in_flight;
                 Player::LoadPositionFromDB(mapid, pX, pY, pZ, pO, in_flight, guid);
@@ -1688,38 +1691,38 @@ void IRCCmd::Tele_Player(_CDATA *CD)
             }
         }
         rMsg = MakeMsg(" \00313[%s] : Teleported To Player: [%s] By: %s.",
-            _PARAMS[0].c_str(),
-            _PARAMS[2].c_str(),
-            CD->USER.c_str());
+                       _PARAMS[0].c_str(),
+                       _PARAMS[2].c_str(),
+                       CD->USER.c_str());
         wMsg = MakeMsg("You Are Being Teleported To: %s. By: %s.",
-            _PARAMS[2].c_str(),
-            CD->USER.c_str());
+                       _PARAMS[2].c_str(),
+                       CD->USER.c_str());
         DoTeleport = true;
     }
-    if(DoTeleport)
+    if (DoTeleport)
     {
-        if(MapManager::IsValidMapCoord(mapid, pX ,pY))
+        if (MapManager::IsValidMapCoord(mapid, pX ,pY))
         {
-		//NOTE: Removed "BeenToGMI" due to back overflows caused with new packet structure (Shinzon)
+            //NOTE: Removed "BeenToGMI" due to back overflows caused with new packet structure (Shinzon)
 
-        //  if(!sIRC.BeenToGMI(pX, pY, _PARAMS[0], CD->USER))
-		//	{
-	    //	if player is online teleport them in real time, if not set the DB to our coordinates.
-                if(plr)
-                {
-                    plr->SaveRecallPosition();
-                    plr->TeleportTo(mapid, pX, pY, pZ, pO);
-                    sIRC.Send_IRC_Channel(ChanOrPM(CD), rMsg, true, CD->TYPE);
-                    Send_Player(plr, wMsg);
-				    sIRC.Send_WoW_Channel(sIRC._wow_chan[1].c_str(), IRCCmd::MakeMsg("|cffffff21 %s : Teleported To %s. By: %s.|r", _PARAMS[0].c_str(), _PARAMS[2].c_str(), CD->USER.c_str()));
-                }
-                else
-                {
-                    uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
-                    Player::SavePositionInDB(mapid,pX,pY,pZ,pO,MapManager::Instance().GetZoneId(mapid,pX,pY,pZ),guid);
-                    sIRC.Send_IRC_Channel(ChanOrPM(CD), rMsg + " \0034*Offline Tele.* ", true, CD->TYPE);
-                }
-		//	}
+            //  if(!sIRC.BeenToGMI(pX, pY, _PARAMS[0], CD->USER))
+            //	{
+            //	if player is online teleport them in real time, if not set the DB to our coordinates.
+            if (plr)
+            {
+                plr->SaveRecallPosition();
+                plr->TeleportTo(mapid, pX, pY, pZ, pO);
+                sIRC.Send_IRC_Channel(ChanOrPM(CD), rMsg, true, CD->TYPE);
+                Send_Player(plr, wMsg);
+                sIRC.Send_WoW_Channel(sIRC._wow_chan[1].c_str(), IRCCmd::MakeMsg("|cffffff21 %s : Teleported To %s. By: %s.|r", _PARAMS[0].c_str(), _PARAMS[2].c_str(), CD->USER.c_str()));
+            }
+            else
+            {
+                uint64 guid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[0]);
+                Player::SavePositionInDB(mapid,pX,pY,pZ,pO,MapManager::Instance().GetZoneId(mapid,pX,pY,pZ),guid);
+                sIRC.Send_IRC_Channel(ChanOrPM(CD), rMsg + " \0034*Offline Tele.* ", true, CD->TYPE);
+            }
+            //	}
         }
         else
             Send_IRCA(CD->USER, "\0034[ERROR] : Invalid Location!", true, "ERROR");
@@ -1732,12 +1735,12 @@ void IRCCmd::Top_Player(_CDATA *CD)
 {
     std::string* _PARAMS = getArray(CD->PARAMS, 2);
     uint32 limitr = 10;
-    if(atoi(_PARAMS[1].c_str()) > 0 && GetLevel(CD->USER) >= sIRC._op_gm_lev)
+    if (atoi(_PARAMS[1].c_str()) > 0 && GetLevel(CD->USER) >= sIRC._op_gm_lev)
         limitr = atoi(_PARAMS[1].c_str());
-    if(_PARAMS[0] == "accttime")
+    if (_PARAMS[0] == "accttime")
     {
         QueryResult *result = CharacterDatabase.PQuery("SELECT account, name, (SUM(totaltime)) AS combinetime FROM characters GROUP BY account ORDER BY combinetime DESC LIMIT 0, %d ", limitr);
-        if(result)
+        if (result)
         {
             Field *fields = result->Fetch();
             std::string tptime = MakeMsg("\x2 Top%d Accounts By Played Time:\x3\x31\x30 ", limitr);
@@ -1756,10 +1759,10 @@ void IRCCmd::Top_Player(_CDATA *CD)
         else
             Send_IRCA(CD->USER, "\0034[ERROR] : No Accounts Returned." ,true, "ERROR");
     }
-    if(_PARAMS[0] == "chartime")
+    if (_PARAMS[0] == "chartime")
     {
         QueryResult *result = CharacterDatabase.PQuery("SELECT name, totaltime FROM characters ORDER BY totaltime DESC LIMIT 0, %d ", limitr);
-        if(result)
+        if (result)
         {
             Field *fields = result->Fetch();
             std::string tptime = MakeMsg("\x2 Top%d Characters By Played Time:\x3\x31\x30 ", limitr);
@@ -1777,10 +1780,10 @@ void IRCCmd::Top_Player(_CDATA *CD)
         else
             Send_IRCA(CD->USER, "\0034[ERROR] : No Characters Returned." ,true, "ERROR");
     }
-    if(_PARAMS[0] == "money")
+    if (_PARAMS[0] == "money")
     {
         QueryResult *result = CharacterDatabase.PQuery("SELECT name, CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ', 1462), ' ', -1) AS UNSIGNED) AS money FROM characters ORDER BY money DESC LIMIT 0, %d ", limitr);
-        if(result)
+        if (result)
         {
             Field *fields = result->Fetch();
             std::string tptime = MakeMsg("\x2 Top%d Characters By Money:\x3\x31\x30 ", limitr);
@@ -1812,9 +1815,134 @@ void IRCCmd::Top_Player(_CDATA *CD)
 void IRCCmd::Who_Logged(_CDATA *CD)
 {
     std::string OPS = "";
-    for(std::list<_client*>::iterator i=_CLIENTS.begin(); i!=_CLIENTS.end();i++)
+    for (std::list<_client*>::iterator i=_CLIENTS.begin(); i!=_CLIENTS.end();i++)
     {
         OPS.append(MakeMsg(" \002[GM:%d IRC: %s - WoW: %s]\002 ", (*i)->GMLevel, (*i)->Name.c_str(), (*i)->UName.c_str()));
     }
     Send_IRCA(ChanOrPM(CD), OPS, true, CD->TYPE);
 }
+
+// BEGIN GM Ticket by bizkut http://github.com/bizkut
+void IRCCmd::GM_Ticket(_CDATA *CD)
+{
+    std::string* _PARAMS = getArray(CD->PARAMS, 3);
+    uint32 limitr = 10;
+    std::string DateTime = "%h:%i%p, %a %d %b %Y";
+    if (atoi(_PARAMS[1].c_str()) > 0 && GetLevel(CD->USER) >= sIRC._op_gm_lev)
+        limitr = atoi(_PARAMS[1].c_str());
+    if (_PARAMS[0] == "list")
+    {
+        QueryResult *result = CharacterDatabase.PQuery("SELECT guid, DATE_FORMAT(ticket_lastchange, '%s') FROM character_ticket ORDER BY ticket_id ASC LIMIT 0, %d", DateTime.c_str(), limitr);
+        if (result)
+        {
+            Field *fields = result->Fetch();
+            std::string tptime = MakeMsg("\x2 First %d Tickets:\x3\x31\x30 ", limitr);
+            for (uint64 i=0; i < result->GetRowCount(); i++)
+            {
+                uint32 guid = fields[0].GetUInt32();
+                std::string CharName = GetCharNameFromGUID(guid);
+                std::string lastchange = fields[1].GetCppString();
+                uint32 tindex = i+1;
+                tptime.append(MakeMsg("[%u] %s \xF| \x3\x31\x30\x2", tindex, CharName.c_str()));
+                result->NextRow();
+            }
+            delete result;
+            Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
+        }
+        else
+            Send_IRCA(CD->USER, "\0034[ERROR] : No Ticket Returned." ,true, "ERROR");
+    }
+    // read ticket
+    if (_PARAMS[0] == "read")
+    {
+        std::string CharName = _PARAMS[1].c_str();
+        uint64 guid = sObjectMgr.GetPlayerGUIDByName(CharName);
+        QueryResult *result = CharacterDatabase.PQuery("SELECT guid, ticket_text, DATE_FORMAT(ticket_lastchange, '%s'), response_text FROM character_ticket WHERE guid=%u",DateTime.c_str(), guid);
+        if (result)
+        {
+            Field *fields = result->Fetch();
+            std::string tptime = MakeMsg("\x2 Ticket [%s]\x3\x31\x30 ", CharName.c_str());
+            uint32 guid = fields[0].GetUInt32();
+            std::string ticktext = fields[1].GetCppString();
+            std::string lastchange = fields[2].GetCppString();
+            std::string tresponse = fields[3].GetCppString();
+            if (tresponse == "")
+                tresponse = "NO RESPONSE YET";
+            tptime.append(MakeMsg("\x02[%s] - %s -\x02 Response: \x02%s\x02", lastchange.c_str(), ticktext.c_str(), tresponse.c_str()));
+            delete result;
+            Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
+            return;
+        }
+        if (!guid)
+        {
+            Send_IRCA(CD->USER, "\0034[ERROR] : Character not found." ,true, "ERROR");
+            return;
+        }
+        else
+            Send_IRCA(CD->USER, "\0034[ERROR] : The character has no ticket." ,true, "ERROR");
+    }
+    if (_PARAMS[0] == "respond")
+    {
+        if (_PARAMS[2] == "")
+		{
+		    Send_IRCA(CD->USER, "\0034[ERROR] : Please specify character's name and respond message." ,true, "ERROR");
+            return;
+		}
+		std::string CharName = _PARAMS[1].c_str();
+        uint64 guid = sObjectMgr.GetPlayerGUIDByName(CharName);
+
+        if (!guid)
+        {
+            Send_IRCA(CD->USER, "\0034[ERROR] : Character not found. " ,true, "ERROR");
+            return;
+        }
+
+        GMTicket* ticket = sTicketMgr.GetGMTicket(GUID_LOPART(guid));
+
+        if (!ticket)
+        {
+            Send_IRCA(CD->USER, "\0034[ERROR] : Ticket not found." ,true, "ERROR");
+            return;
+        }
+
+        std::string escapedString = _PARAMS[2].c_str();
+        CharacterDatabase.escape_string(escapedString);
+        CharacterDatabase.PExecute("UPDATE character_ticket SET response_text = '%s' WHERE guid = '%u'", escapedString.c_str(), guid);
+
+        if (Player* pl = sObjectMgr.GetPlayer(guid))
+            pl->GetSession()->SendGMResponse(ticket);
+
+        std::string tptime = MakeMsg("\x2 Ticket [%s] Has Been Respond\x3\x31\x30 ", CharName.c_str());
+        Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
+    }
+    if (_PARAMS[0] == "delete")
+    {
+
+        if (_PARAMS[1] == "")
+        {
+            Send_IRCA(CD->USER, "\0034[ERROR] : Please specify character's name or 'all' to delete all tickets." ,true, "ERROR");
+            return;
+        }
+        if (_PARAMS[1] == "all")
+        {
+            sTicketMgr.DeleteAll();
+            std::string tptime = MakeMsg("\x2 All Tickets Deleted!\x3\x31\x30 ");
+            Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
+            return;
+        }
+        std::string CharName = _PARAMS[1].c_str();
+        uint64 guid = sObjectMgr.GetPlayerGUIDByName(CharName);
+        GMTicket* ticket = sTicketMgr.GetGMTicket(GUID_LOPART(guid));
+        if (!ticket)
+        {
+            Send_IRCA(CD->USER, "\0034[ERROR] : Ticket not found." ,true, "ERROR");
+            return;
+        }
+        sTicketMgr.Delete(guid);
+        if (Player* pl = sObjectMgr.GetPlayer(MAKE_NEW_GUID(guid, 0, HIGHGUID_PLAYER)))
+            pl->GetSession()->SendGMTicketGetTicket(0x0A, 0);
+        std::string tptime = MakeMsg("\x2 Ticket [%s] Deleted\x3\x31\x30 ", CharName.c_str());
+        Send_IRCA(ChanOrPM(CD), tptime, true, CD->TYPE);
+    }
+}
+// END GM Ticket

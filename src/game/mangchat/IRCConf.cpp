@@ -35,7 +35,7 @@ bool IRCClient::LoadConfig(char const* cfgfile)
     sIRC._Host = MCConfig.GetStringDefault("irc.host", "irc.freenode.net");
     if(sIRC._Host.size() > 0)
         ConfCnt++;
-    sIRC._Mver = MCConfig.GetStringDefault("irc.mver", "Version 1.7.8");
+    sIRC._Mver = MCConfig.GetStringDefault("irc.mver", "Version 1.7.9");
 	sIRC._Port = MCConfig.GetIntDefault("irc.port", 6667);
     sIRC._User = MCConfig.GetStringDefault("irc.user", "MangChat");
     sIRC._Pass = MCConfig.GetStringDefault("irc.pass", "MyDumbPass");

@@ -109,6 +109,7 @@ class IRCCmd
         void    Tele_Player(_CDATA *CD);
         void    Top_Player(_CDATA *CD);
         void    Who_Logged(_CDATA *CD);
+		void    GM_Ticket(_CDATA *CD);
         bool    CanUse(std::string USER, int nLevel);
         bool    ValidParams(std::string PARAMS, int nCount = 1);
         bool    ParamsValid(_CDATA *CD, int pCnt);
@@ -116,6 +117,7 @@ class IRCCmd
         std::string GetAccName(std::string sName);
         std::string GetNameFromAcct(std::string sName);
         std::string GetAcctNameFromID(uint32 acctid);
+        std::string GetCharNameFromGUID(uint32 acctid);
         std::string GetIPFromPlayer(std::string player);
         std::string SecToDay(std::string secons);
         int GetAcctIDFromName(std::string sName);

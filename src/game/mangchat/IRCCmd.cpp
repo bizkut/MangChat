@@ -523,6 +523,25 @@ bool IRCCmd::IsValid(std::string USER, std::string FROM, std::string CHAT, std::
             }
             cValid = true;
         }
+		// BEGIN GM Ticket by bizkut http://github.com/bizkut
+		else if(CDATA.CMD == "TICKET")
+        {
+            CDATA.PCOUNT = 1;
+            switch(ParamsValid(&CDATA, 1, sIRC.CTOP))
+            {
+                case E_OK:
+                    GM_Ticket(&CDATA);
+                    break;
+                case E_SIZE:
+                    sIRC.Send_IRC_Channel(USER, "\0034[ERROR] : Syntax Error! ( "+sIRC._cmd_prefx+"ticket <list/read/respond/delete> <limit/name/all> <message> )", true, "ERROR");
+                    break;
+                case E_AUTH:
+                    AuthValid = false;
+                    break;
+            }
+            cValid = true;
+        }
+		// END GM Ticket
         if(!AuthValid && IsLoggedIn(USER))
             sIRC.Send_IRC_Channel(USER, "\0034[ERROR] : Access Denied! Your Security Level Is Too Low To Use This Command!", true, "ERROR");
         if(cValid == false && (sIRC.BOTMASK & 4) != 0)
@@ -676,6 +695,19 @@ int IRCCmd::GetAcctIDFromName(std::string sName)
 std::string IRCCmd::GetAcctNameFromID(uint32 acctid)
 {
     QueryResult *result = loginDatabase.PQuery("SELECT username FROM account WHERE id = '%d'", acctid);
+    if(result)
+    {
+        std::string name = (*result)[0].GetCppString();
+        delete result;
+        return name;
+    }
+
+    return "";
+}
+
+std::string IRCCmd::GetCharNameFromGUID(uint32 chrid)
+{
+    QueryResult *result = CharacterDatabase.PQuery("SELECT name FROM characters WHERE guid = '%d'", chrid);
     if(result)
     {
         std::string name = (*result)[0].GetCppString();
